@@ -1,21 +1,17 @@
-[![Tsoding](https://img.shields.io/badge/twitch.tv-tsoding-purple?logo=twitch&style=for-the-badge)](https://www.twitch.tv/tsoding)
 [![Build Status](https://travis-ci.org/tsoding/boomer.svg?branch=master)](https://travis-ci.org/tsoding/boomer)
 
-# Boomer
+# Zoomer
 
 ![](./demo.gif)
 
 Zoomer application for Linux.
 
-- Development is done on https://twitch.tv/tsoding
-- Archive of the streams: https://www.twitch.tv/collections/HlRy-q69uBXmpQ
-
 ## Dependencies
 
-### Debian
+### Arch
 
 ```console
-$ sudo apt-get install libgl1-mesa-dev libx11-dev libxext-dev libxrandr-dev
+$ Sudo pacman -S nim
 ```
 
 ## Quick Start
@@ -42,7 +38,7 @@ This will enable reloading the shaders with `Ctrl+R`. The shader files (`frag.gl
 
 | Control                                   | Description                                                   |
 |-------------------------------------------|---------------------------------------------------------------|
-| <kbd>0</kbd>                              | Reset the application state (position, scale, velocity, etc). |
+| Middle mouse click or <kbd>0</kbd>        | Reset the application state (position, scale, velocity, etc). |
 | <kbd>q</kbd> or <kbd>ESC</kbd>            | Quit the application.                                         |
 | <kbd>r</kbd>                              | Reload configuration.                                         |
 | <kbd>Ctrl</kbd> + <kbd>r</kbd>            | Reload the shaders (only for Developer mode)                  |
@@ -86,11 +82,11 @@ Experimental or unstable features can be enabled by passing the following flags 
 ## NixOS Overlay
 
 ```
-$ git clone git://github.com/tsoding/boomer.git /path/to/boomer
+$ git clone git://github.com/laluxx/zoomer.git /path/to/zoomer
 $ mkdir -p ~/.config/nixpkgs/overlays
 $ cd ~/.config/nixpkgs/overlays
-$ ln -s /path/to/boomer/overlay/ boomer
-$ nix-env -iA nixos.boomer
+$ ln -s /path/to/zoomer/overlay/ zoomer
+$ nix-env -iA nixos.zoomer
 ```
 
 ## References
@@ -106,12 +102,3 @@ $ nix-env -iA nixos.boomer
 - http://netpbm.sourceforge.net/doc/ppm.html
 - https://github.com/def-/nim-syscall
 - https://github.com/dreamer/scrot
-
-## Support
-
-You can support my work via
-
-- Twitch channel: https://www.twitch.tv/subs/tsoding
-- Patreon: https://www.patreon.com/tsoding
-
-[#26]: https://github.com/tsoding/boomer/issues/26
