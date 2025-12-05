@@ -49,16 +49,18 @@ Usage: zoomer [OPTIONS]
 
 ## Controls
 
-| Control                                   | Description                                                   |
-|-------------------------------------------|---------------------------------------------------------------|
-| Middle mouse click or <kbd>0</kbd>        | Reset the application state (position, scale, velocity, etc). |
-| <kbd>q</kbd> or <kbd>ESC</kbd>            | Quit the application.                                         |
-| <kbd>r</kbd>                              | Reload configuration.                                         |
-| <kbd>Ctrl</kbd> + <kbd>r</kbd>            | Reload the shaders (only for Developer mode)                  |
-| <kbd>f</kbd>                              | Toggle flashlight effect.                                     |
-| Drag with left mouse button               | Move the image around.                                        |
-| Scroll wheel or <kbd>=</kbd>/<kbd>-</kbd> | Zoom in/out.                                                  |
-| <kbd>Ctrl</kbd> + Scroll wheel            | Change the radious of the flaslight.                          |
+| Control                                                                         | Description                                                   |
+|---------------------------------------------------------------------------------|---------------------------------------------------------------|
+| **Middle mouse click** or <kbd>0</kbd>                                          | Reset the application state (position, scale, velocity, etc). |
+| <kbd>q</kbd> or <kbd>ESC</kbd>                                                  | Quit the application.                                         |
+| <kbd>f</kbd>                                                                    | Toggle flashlight effect.                                     |
+| **Drag** with left mouse button                                                 | Move the image around.                                        |
+| **Scroll wheel** or <kbd>+</kbd>/<kbd>-</kbd>                                   | Zoom in/out.                                                  |
+| <kbd>Ctrl</kbd> + **Scroll wheel** or <kbd>Ctrl</kbd>+<kbd>+</kbd>/<kbd>-</kbd> | Change the radius of the flashlight (when enabled).           |
+| <kbd>h</kbd> or <kbd>←</kbd> (Left arrow)                                       | Pan camera left.                                              |
+| <kbd>j</kbd> or <kbd>↓</kbd> (Down arrow)                                       | Pan camera down.                                              |
+| <kbd>k</kbd> or <kbd>↑</kbd> (Up arrow)                                         | Pan camera up.                                                |
+| <kbd>l</kbd> or <kbd>→</kbd> (Right arrow)                                      | Pan camera right.                                             |
 
 ## Configuration
 
@@ -75,12 +77,19 @@ You can generate a new config at `$HOME/.config/zoomer/config` with `$ zoomer --
 
 Supported parameters:
 
-| Name           | Description                                        |
-|----------------|----------------------------------------------------|
-| min_scale      | The smallest it can get when zooming out           |
-| scroll_speed   | How quickly you can zoom in/out by scrolling       |
-| drag_friction  | How quickly the movement slows down after dragging |
-| scale_friction | How quickly the zoom slows down after scrolling    |
+| Name                                 | Description                                                       |
+|--------------------------------------|-------------------------------------------------------------------|
+| min_scale                            | The smallest it can get when zooming out                          |
+| scroll_speed                         | How quickly you can zoom in/out by scrolling                      |
+| drag_friction                        | How quickly the movement slows down after dragging                |
+| scale_friction                       | How quickly the zoom slows down after scrolling                   |
+| scale_lerp_speed                     | Speed of zoom animation when recentering                          |
+| camera_pan_amount                    | Distance to move when using arrows/hjkl keys for panning          |
+| camera_position_lerp_speed           | Speed of panning animation when using keyboard navigation         |
+| flashlight_lerp_speed                | Speed of flashlight radius and fade animations                    |
+| flashlight_disable_radius_multiplier | Flashlight radius multiplier when disabling                       |
+| lerp_camera_recenter                 | Enable/disable smooth camera recenter animation (true/false)      |
+| camera_rfecenter_lerp_speed          | Speed of camera recenter animation (if lerp_camera_recenter=true) |
 
 ## Experimental Features Compilation Flags
 

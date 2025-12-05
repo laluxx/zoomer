@@ -1,18 +1,25 @@
 #include "camera.h"
+#include "config.h"
 #include <math.h>
 
 Vec2f world(const Camera* camera, Vec2f v) {
     return vec2_div(v, camera->scale);
 }
 
-
 void update_camera(Camera *camera, float dt, const Mouse *mouse,
                    XImage* image, Vec2f window_size) {
+    // Lerp scale towards target (for recenter or other animations)
+    if (fabsf(camera->target_scale - camera->scale) > 0.001f) {
+        camera->scale += (camera->target_scale - camera->scale) * config.scale_lerp_speed * dt;
+    }
+    
+    // Handle manual scale changes (scroll wheel)
     if (fabsf(camera->delta_scale) > 0.5f) {
         Vec2f half_window = vec2_mul(window_size, 0.5f);
         Vec2f p0 = vec2_div(vec2_sub(camera->scale_pivot, half_window), camera->scale);
         
         camera->scale = fmaxf(camera->scale + camera->delta_scale * dt, config.min_scale);
+        camera->target_scale = camera->scale;  // Keep target in sync with manual zoom
         
         Vec2f p1 = vec2_div(vec2_sub(camera->scale_pivot, half_window), camera->scale);
         camera->position = vec2_add(camera->position, vec2_sub(p0, p1));

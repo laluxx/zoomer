@@ -115,7 +115,6 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f window_size) {
     }
     
     // Lerp radius towards target
-    /* float lerp_speed = 8.0f; */
     fl->radius += (fl->target_radius - fl->radius) * config.flashlight_lerp_speed * dt;
     
     // Stop animating when close enough
@@ -341,8 +340,8 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    
-    Camera camera = {.scale = 1.0f};
+
+    Camera camera = {.scale = 1.0f, .target_scale = 1.0f,};
     Vec2f cursor_pos = get_cursor_position(display);
     Mouse mouse = {.curr = cursor_pos, .prev = cursor_pos};
     
@@ -390,11 +389,19 @@ int main(int argc, char** argv) {
                 if (key == XK_q || key == XK_Escape) {
                     running = false;
                 } else if (key == XK_0) {
-                    camera.scale = 1.0f;
-                    camera.delta_scale = 0.0f;
-                    camera.position = (Vec2f){0, 0};
-                    camera.target_position = (Vec2f){0, 0};
-                    camera.velocity = (Vec2f){0, 0};
+                    if (config.lerp_camera_recenter) {
+                        camera.target_position = (Vec2f){0, 0};
+                        camera.target_scale = 1.0f;
+                        camera.velocity = (Vec2f){0, 0};
+                        camera.delta_scale = 0.0f;
+                    } else {
+                        camera.scale = 1.0f;
+                        camera.target_scale = 1.0f;
+                        camera.delta_scale = 0.0f;
+                        camera.position = (Vec2f){0, 0};
+                        camera.target_position = (Vec2f){0, 0};
+                        camera.velocity = (Vec2f){0, 0};
+                    }
                 } else if (key == XK_f) {
                     flashlight.is_enabled = !flashlight.is_enabled;
                     flashlight.animating = true;
@@ -407,7 +414,7 @@ int main(int argc, char** argv) {
                         flashlight.radius = max_screen_dimension;
                         flashlight.target_radius = 200.0f;
                     } else {
-                        // Going out: keep radius where it is, just fade shadow
+                        // Going out
                         flashlight.target_radius = flashlight.target_radius * config.flashlight_disable_radius_multiplier;
                     }
                     
@@ -443,12 +450,19 @@ int main(int argc, char** argv) {
                     mouse.drag = true;
                     camera.velocity = (Vec2f){0, 0};
                 } else if (event.xbutton.button == Button2) {
-                    // Middle mouse button - reset view
-                    camera.scale = 1.0f;
-                    camera.delta_scale = 0.0f;
-                    camera.position = (Vec2f){0, 0};
-                    camera.target_position = (Vec2f){0, 0};                    
-                    camera.velocity = (Vec2f){0, 0};
+                    if (config.lerp_camera_recenter) {
+                        camera.target_position = (Vec2f){0, 0};
+                        camera.target_scale = 1.0f;
+                        camera.velocity = (Vec2f){0, 0};
+                        camera.delta_scale = 0.0f;
+                    } else {
+                        camera.scale = 1.0f;
+                        camera.target_scale = 1.0f;
+                        camera.delta_scale = 0.0f;
+                        camera.position = (Vec2f){0, 0};
+                        camera.target_position = (Vec2f){0, 0};
+                        camera.velocity = (Vec2f){0, 0};
+                    }
                 } else if (event.xbutton.button == Button4) {
                     // Scroll up
                     if ((event.xbutton.state & ControlMask) && flashlight.is_enabled) {

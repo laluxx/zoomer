@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <strings.h>
 
 Config config;
 
@@ -16,7 +17,17 @@ static Config default_config(void) {
         .camera_position_lerp_speed = 3.0f,
         .flashlight_lerp_speed = 8.0f,
         .flashlight_disable_radius_multiplier = 2.0f,
+        .lerp_camera_recenter = true,
+        .camera_recenter_lerp_speed = 3.0f,
+        .scale_lerp_speed = 3.0f,
     };
+}
+
+static bool parse_bool(const char* value) {
+    return (strcasecmp(value, "true") == 0 ||
+            strcasecmp(value, "yes") == 0 ||
+            strcasecmp(value, "on") == 0 ||
+            strcmp(value, "1") == 0);
 }
 
 Config load_config(const char* filepath) {
@@ -51,6 +62,8 @@ Config load_config(const char* filepath) {
                 config.drag_friction = atof(value);
             } else if (strcmp(k, "scale_friction") == 0) {
                 config.scale_friction = atof(value);
+            } else if (strcmp(k, "scale_lerp_speed") == 0) {
+                config.scale_lerp_speed = atof(value);
             } else if (strcmp(k, "camera_pan_amount") == 0) {
                 config.camera_pan_amount = atof(value);
             } else if (strcmp(k, "camera_position_lerp_speed") == 0) {
@@ -59,6 +72,10 @@ Config load_config(const char* filepath) {
                 config.flashlight_lerp_speed = atof(value);
             } else if (strcmp(k, "flashlight_disable_radius_multiplier") == 0) {
                 config.flashlight_disable_radius_multiplier = atof(value);
+            } else if (strcmp(k, "lerp_camera_recenter") == 0) {
+                config.lerp_camera_recenter = parse_bool(value);
+            } else if (strcmp(k, "camera_recenter_lerp_speed") == 0) {
+                config.camera_recenter_lerp_speed = atof(value);
             }
         }
     }
@@ -84,12 +101,19 @@ void generate_default_config(const char* filepath) {
     }
     
     Config config = default_config();
+    fprintf(f, "# Camera settings\n");
     fprintf(f, "min_scale = %f\n",                                 config.min_scale);
     fprintf(f, "scroll_speed = %f\n",                              config.scroll_speed);
     fprintf(f, "drag_friction = %f\n",                             config.drag_friction);
     fprintf(f, "scale_friction = %f\n",                            config.scale_friction);
+    fprintf(f, "scale_lerp_speed = %f\n",                          config.scale_lerp_speed);
     fprintf(f, "camera_pan_amount = %f\n",                         config.camera_pan_amount);
     fprintf(f, "camera_position_lerp_speed = %f\n",                config.camera_position_lerp_speed);
+    fprintf(f, "\n# Recenter settings (0 or middle mouse button)\n");
+    fprintf(f, "lerp_camera_recenter = %s  # true/false, yes/no, on/off, 1/0\n", 
+            config.lerp_camera_recenter ? "true" : "false");
+    fprintf(f, "camera_recenter_lerp_speed = %f\n",                config.camera_recenter_lerp_speed);
+    fprintf(f, "\n# Flashlight settings\n");
     fprintf(f, "flashlight_lerp_speed = %f\n",                     config.flashlight_lerp_speed);
     fprintf(f, "flashlight_disable_radius_multiplier = %f\n",      config.flashlight_disable_radius_multiplier);
     

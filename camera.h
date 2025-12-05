@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <X11/Xlib.h>
 #include "la.h"
-#include "config.h"
 
 #define VELOCITY_THRESHOLD 15.0f
 
@@ -18,6 +17,7 @@ typedef struct {
     Vec2f target_position;  
     Vec2f velocity;
     float scale;
+    float target_scale;
     float delta_scale;
     Vec2f scale_pivot;
 } Camera;
