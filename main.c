@@ -115,8 +115,8 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f window_size) {
     }
     
     // Lerp radius towards target
-    float lerp_speed = 8.0f;
-    fl->radius += (fl->target_radius - fl->radius) * lerp_speed * dt;
+    /* float lerp_speed = 8.0f; */
+    fl->radius += (fl->target_radius - fl->radius) * config.flashlight_lerp_speed * dt;
     
     // Stop animating when close enough
     if (fl->animating && fabsf(fl->target_radius - fl->radius) < 1.0f) {
@@ -126,7 +126,7 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f window_size) {
     
     // Update shadow with same lerp speed as radius
     float target_shadow = fl->is_enabled ? 0.8f : 0.0f;
-    fl->shadow += (target_shadow - fl->shadow) * lerp_speed * dt;
+    fl->shadow += (target_shadow - fl->shadow) * config.flashlight_lerp_speed * dt;
 }
 
 static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GLuint vao,
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         nanosleep(&ts, NULL);
     }
     
-    Config config = load_config(config_file);
+    config = load_config(config_file);
     
     Display* display = XOpenDisplay(NULL);
     if (!display) {
@@ -408,7 +408,7 @@ int main(int argc, char** argv) {
                         flashlight.target_radius = 200.0f;
                     } else {
                         // Going out: keep radius where it is, just fade shadow
-                        flashlight.target_radius = flashlight.target_radius * 2;
+                        flashlight.target_radius = flashlight.target_radius * config.flashlight_disable_radius_multiplier;
                     }
                     
                 } else if (key == XK_equal) {
@@ -484,7 +484,7 @@ int main(int argc, char** argv) {
             }
         }
     
-        update_camera(&camera, &config, dt, &mouse, screenshot.image,
+        update_camera(&camera, dt, &mouse, screenshot.image,
                       (Vec2f){(float)wa.width, (float)wa.height});
         update_flashlight(&flashlight, dt, (Vec2f){(float)wa.width, (float)wa.height});
     
