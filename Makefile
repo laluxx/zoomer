@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -std=c23 -O3
 LIBS = -lX11 -lGL -lGLEW -lXrandr -lm
 TARGET = zoomer
 
-SRCS = main.c config.c screenshot.c navigation.c
+SRCS = main.c config.c screenshot.c camera.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)

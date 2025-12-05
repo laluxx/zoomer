@@ -1,4 +1,4 @@
-#include "navigation.h"
+#include "camera.h"
 #include <math.h>
 
 Vec2f world(const Camera* camera, Vec2f v) {
@@ -23,4 +23,10 @@ void update_camera(Camera* camera, const Config* config, float dt,
         camera->velocity = vec2_sub(camera->velocity, 
                                    vec2_mul(camera->velocity, dt * config->drag_friction));
     }
+
+    // Lerp position towards target
+    camera->position.x += (camera->target_position.x - camera->position.x) *
+                          config->camera_position_lerp_speed * dt;
+    camera->position.y += (camera->target_position.y - camera->position.y) *
+                          config->camera_position_lerp_speed * dt;
 }

@@ -15,6 +15,7 @@ typedef struct {
 
 typedef struct {
     Vec2f position;
+    Vec2f target_position;  
     Vec2f velocity;
     float scale;
     float delta_scale;

@@ -18,7 +18,7 @@
 
 #include "config.h"
 #include "screenshot.h"
-#include "navigation.h"
+#include "camera.h"
 #include "la.h"
 
 #define MAX_SHADER_SIZE 4096
@@ -379,6 +379,7 @@ int main(int argc, char** argv) {
                 if (mouse.drag) {
                     Vec2f delta = vec2_sub(world(&camera, mouse.prev), world(&camera, mouse.curr));
                     camera.position = vec2_add(camera.position, delta);
+                    camera.target_position = camera.position;                    
                     camera.velocity = vec2_mul(delta, (float)rate);
                 }
                 mouse.prev = mouse.curr;
@@ -392,24 +393,8 @@ int main(int argc, char** argv) {
                     camera.scale = 1.0f;
                     camera.delta_scale = 0.0f;
                     camera.position = (Vec2f){0, 0};
+                    camera.target_position = (Vec2f){0, 0};
                     camera.velocity = (Vec2f){0, 0};
-                    // } else if (key == XK_f) {
-                    //     flashlight.is_enabled = !flashlight.is_enabled;
-                    //     flashlight.animating = true;
-                        
-                    //     // Update max screen dimension in case window was resized
-                    //     XWindowAttributes current_wa;
-                    //     XGetWindowAttributes(display, win, &current_wa);
-                    //     max_screen_dimension = fmaxf(current_wa.width, current_wa.height) * 1.5f;
-                        
-                    //     if (flashlight.is_enabled) {
-                    //         // Coming in: start from full screen, shrink to target
-                    //         flashlight.radius = max_screen_dimension;
-                    //         flashlight.target_radius = 200.0f;
-                    //     } else {
-                    //         // Going out: expand from current to full screen
-                    //         flashlight.target_radius = max_screen_dimension;
-                    //     }
                 } else if (key == XK_f) {
                     flashlight.is_enabled = !flashlight.is_enabled;
                     flashlight.animating = true;
@@ -423,7 +408,7 @@ int main(int argc, char** argv) {
                         flashlight.target_radius = 200.0f;
                     } else {
                         // Going out: keep radius where it is, just fade shadow
-                        flashlight.target_radius = flashlight.radius; // Don't expand!
+                        flashlight.target_radius = flashlight.target_radius * 2;
                     }
                     
                 } else if (key == XK_equal) {
@@ -440,6 +425,14 @@ int main(int argc, char** argv) {
                         camera.delta_scale -= config.scroll_speed;
                         camera.scale_pivot = mouse.curr;
                     }
+                } else if (key == XK_h || key == XK_Left) {
+                    camera.target_position.x -= config.camera_pan_amount;
+                } else if (key == XK_j || key == XK_Down) {
+                    camera.target_position.y += config.camera_pan_amount;
+                } else if (key == XK_k || key == XK_Up) {
+                    camera.target_position.y -= config.camera_pan_amount;
+                } else if (key == XK_l || key == XK_Right) {
+                    camera.target_position.x += config.camera_pan_amount;
                 }
                 break;
             }
@@ -454,6 +447,7 @@ int main(int argc, char** argv) {
                     camera.scale = 1.0f;
                     camera.delta_scale = 0.0f;
                     camera.position = (Vec2f){0, 0};
+                    camera.target_position = (Vec2f){0, 0};                    
                     camera.velocity = (Vec2f){0, 0};
                 } else if (event.xbutton.button == Button4) {
                     // Scroll up

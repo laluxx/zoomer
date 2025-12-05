@@ -9,7 +9,9 @@ static Config default_config(void) {
         .min_scale = 0.01f,
         .scroll_speed = 1.5f,
         .drag_friction = 6.0f,
-        .scale_friction = 4.0f
+        .scale_friction = 4.0f,
+        .camera_pan_amount = 200.0f,
+        .camera_position_lerp_speed = 3.0f,
     };
 }
 
@@ -45,6 +47,10 @@ Config load_config(const char* filepath) {
                 config.drag_friction = atof(value);
             } else if (strcmp(k, "scale_friction") == 0) {
                 config.scale_friction = atof(value);
+            } else if (strcmp(k, "camera_pan_amount") == 0) {
+                config.camera_pan_amount = atof(value);
+            } else if (strcmp(k, "camera_position_lerp_speed") == 0) {
+                config.camera_position_lerp_speed = atof(value);
             }
         }
     }
@@ -70,10 +76,12 @@ void generate_default_config(const char* filepath) {
     }
     
     Config config = default_config();
-    fprintf(f, "min_scale = %f\n", config.min_scale);
-    fprintf(f, "scroll_speed = %f\n", config.scroll_speed);
-    fprintf(f, "drag_friction = %f\n", config.drag_friction);
-    fprintf(f, "scale_friction = %f\n", config.scale_friction);
+    fprintf(f, "min_scale = %f\n",                    config.min_scale);
+    fprintf(f, "scroll_speed = %f\n",                 config.scroll_speed);
+    fprintf(f, "drag_friction = %f\n",                config.drag_friction);
+    fprintf(f, "scale_friction = %f\n",               config.scale_friction);
+    fprintf(f, "camera_pan_amount = %f\n",                 config.camera_pan_amount);
+    fprintf(f, "camera_position_lerp_speed = %f\n",   config.camera_pan_amount);
     
     fclose(f);
 }
