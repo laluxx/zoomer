@@ -1,14 +1,6 @@
 # Zoomer - Boomer C Port
 
-A C port of [tsoding's zoomer](https://github.com/tsoding/zoomer) screen magnification tool.
-
-## Features
-
-- Screen magnification with smooth zooming
-- Pan and drag navigation
-- Flashlight mode (toggle with `f`)
-- Configurable settings
-- Windowed or fullscreen mode
+A C port of [tsoding's zoomer](https://github.com/tsoding/boomer) screen magnification tool.
 
 ## Dependencies
 
