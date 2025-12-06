@@ -19,6 +19,9 @@ typedef struct {
     bool  blur_outside_flashlight;
     float outside_flashlight_blur_radius;
     bool  hide_cursor_on_flashlight;
+    // Shader paths
+    char vertex_shader_path[512];
+    char fragment_shader_path[512];
 } Config;
 
 extern Config config;

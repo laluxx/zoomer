@@ -56,11 +56,28 @@ static char* read_file(const char* path) {
     return content;
 }
 
-static bool load_shader(Shader* shader, const char* path) {
-    strncpy(shader->path, path, sizeof(shader->path) - 1);
-    char* content = read_file(path);
-    if (!content) return false;
+static bool load_shader(Shader* shader, const char* config_path, const char* fallback_path) {
+    // Try config path first if it's set
+    if (config_path && config_path[0] != '\0') {
+        char* content = read_file(config_path);
+        if (content) {
+            strncpy(shader->path, config_path, sizeof(shader->path) - 1);
+            strncpy(shader->content, content, sizeof(shader->content) - 1);
+            free(content);
+            return true;
+        } else {
+            fprintf(stderr, "Warning: Could not load shader from config path: %s\n", config_path);
+        }
+    }
     
+    // Fall back to relative path
+    char* content = read_file(fallback_path);
+    if (!content) {
+        fprintf(stderr, "Error: Could not load shader from fallback path: %s\n", fallback_path);
+        return false;
+    }
+    
+    strncpy(shader->path, fallback_path, sizeof(shader->path) - 1);
     strncpy(shader->content, content, sizeof(shader->content) - 1);
     free(content);
     return true;
@@ -289,13 +306,16 @@ int main(int argc, char** argv) {
     }
     printf("OpenGL version: %s\n", glGetString(GL_VERSION));
     
-    // Load shaders
+    // Load shaders with config paths and fallbacks
     Shader vertex_shader, fragment_shader;
-    if (!load_shader(&vertex_shader, "vert.glsl") || 
-        !load_shader(&fragment_shader, "frag.glsl")) {
+    if (!load_shader(&vertex_shader, config.vertex_shader_path, "/etc/zoomer/vert.glsl") || 
+        !load_shader(&fragment_shader, config.fragment_shader_path, "/etc/zoomer/frag.glsl")) {
         fprintf(stderr, "Failed to load shaders\n");
         return 1;
     }
+    
+    printf("Loaded vertex shader:   %s\n", vertex_shader.path);
+    printf("Loaded fragment shader: %s\n", fragment_shader.path);
     
     GLuint shader_program = create_shader_program(&vertex_shader, &fragment_shader);
     
