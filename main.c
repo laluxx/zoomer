@@ -128,21 +128,23 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f window_size) {
     fl->shadow += (target_shadow - fl->shadow) * config.flashlight_lerp_speed * dt;
 }
 
+
 static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GLuint vao,
                       Vec2f window_size, Mouse* mouse, Flashlight* flashlight) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glUseProgram(shader);
-    
+
     glUniform2f(glGetUniformLocation(shader, "cameraPos"), camera->position.x, camera->position.y);
     glUniform1f(glGetUniformLocation(shader, "cameraScale"), camera->scale);
-    glUniform2f(glGetUniformLocation(shader, "screenshotSize"), 
+    glUniform2f(glGetUniformLocation(shader, "screenshotSize"),
                 (float)screenshot->image->width, (float)screenshot->image->height);
     glUniform2f(glGetUniformLocation(shader, "windowSize"), window_size.x, window_size.y);
     glUniform2f(glGetUniformLocation(shader, "cursorPos"), mouse->curr.x, mouse->curr.y);
     glUniform1f(glGetUniformLocation(shader, "flShadow"), flashlight->shadow);
     glUniform1f(glGetUniformLocation(shader, "flRadius"), flashlight->radius);
+    glUniform1f(glGetUniformLocation(shader, "flEnabled"), flashlight->is_enabled ? 1.0f : 0.0f);
     
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
