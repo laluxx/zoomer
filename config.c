@@ -20,6 +20,11 @@ static Config default_config(void) {
         .lerp_camera_recenter = true,
         .camera_recenter_lerp_speed = 3.0f,
         .scale_lerp_speed = 3.0f,
+        .blur_background = true,
+        .background_blur_radius = 10.0f,
+        .blur_outside_flashlight = true,
+        .outside_flashlight_blur_radius = 10.0f,
+        .hide_cursor_on_flashlight = true,
     };
 }
 
@@ -76,6 +81,16 @@ Config load_config(const char* filepath) {
                 config.lerp_camera_recenter = parse_bool(value);
             } else if (strcmp(k, "camera_recenter_lerp_speed") == 0) {
                 config.camera_recenter_lerp_speed = atof(value);
+            } else if (strcmp(k, "blur_background") == 0) {
+                config.blur_background = parse_bool(value);
+            } else if (strcmp(k, "background_blur_radius") == 0) {
+                config.background_blur_radius = atof(value);
+            } else if (strcmp(k, "blur_outside_flashlight") == 0) {
+                config.blur_outside_flashlight = parse_bool(value);
+            } else if (strcmp(k, "outside_flashlight_blur_radius") == 0) {
+                config.outside_flashlight_blur_radius = atof(value);
+            } else if (strcmp(k, "hide_cursor_on_flashlight") == 0) {
+                config.hide_cursor_on_flashlight = parse_bool(value);
             }
         }
     }
@@ -116,6 +131,15 @@ void generate_default_config(const char* filepath) {
     fprintf(f, "\n# Flashlight settings\n");
     fprintf(f, "flashlight_lerp_speed = %f\n",                     config.flashlight_lerp_speed);
     fprintf(f, "flashlight_disable_radius_multiplier = %f\n",      config.flashlight_disable_radius_multiplier);
+    fprintf(f, "blur_background = %s  # true/false, yes/no, on/off, 1/0\n", 
+            config.blur_background ? "true" : "false");
+    fprintf(f, "background_blur_radius = %f\n",      config.background_blur_radius);
+    fprintf(f, "blur_outside_flashlight = %s  # true/false, yes/no, on/off, 1/0\n", 
+            config.blur_outside_flashlight ? "true" : "false");
+    fprintf(f, "outside_flashlight_blur_radius = %f\n",      config.outside_flashlight_blur_radius);
+    fprintf(f, "hide_cursor_on_flashlight = %s  # true/false, yes/no, on/off, 1/0\n", 
+            config.hide_cursor_on_flashlight ? "true" : "false");
+
     
     fclose(f);
 }

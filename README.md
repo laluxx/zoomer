@@ -1,6 +1,6 @@
 # Zoomer - Boomer C Port
 
-A C port of [tsoding's zoomer](https://github.com/tsoding/boomer) screen magnification tool.
+A C port of [tsoding's boomer](https://github.com/tsoding/boomer) screen magnification tool.
 
 ## Dependencies
 
@@ -90,6 +90,8 @@ Supported parameters:
 | flashlight_disable_radius_multiplier | Flashlight radius multiplier when disabling                       |
 | lerp_camera_recenter                 | Enable/disable smooth camera recenter animation (true/false)      |
 | camera_rfecenter_lerp_speed          | Speed of camera recenter animation (if lerp_camera_recenter=true) |
+| blur_outside_flashlight              | Whether to blur outside the flashlight when active                |
+| outside_flashlight_blur_radius       | The radius of the blur outside the flashlight                                                              |
 
 ## Experimental Features Compilation Flags
 
@@ -100,6 +102,32 @@ Experimental or unstable features can be enabled by passing the following flags 
 | `-DLIVE`   | Live image update. See issue [#26].                                                                                            |
 | `-DMITSHM` | Enables faster Live image update using MIT-SHM X11 extension. Should be used along with `-DLIVE` to have an effect             |
 | `-DSELECT` | Application lets the user to click on te window to "track" and it will track that specific window instead of the whole screen. |
+
+
+## TODO
+Color for the background                              -- COLOR CONFIG
+Blurred screenshot for the background                 -- BOOL CONFIG
+Guassian blur radius bot the blurred background       -- FLOAT CONFIG
+Option to not use liquid glass on the flashlight      -- BOOL CONFIG
+Region color                                          -- COLOR CONFIG
+morph the flashlight circle like a bubble             -- BOOL CONFIG
+
+
+drag with right mouse button to select a region of pixels
+it will show the width and height of the region in pixels
+
+ALT + mouse whell could enable the flashlight if it’s off
+and change both the camera scale and the radius
+of the flashlight at the same time
+
+new keybind ’s’ to take a screenshot at runtime
+of the visible part of the screenshot
+and flags -s --screen-shot to take a screenshot of
+the entire screen copy it to te clipboard and exit
+
+## FIXME
+After disabling toggling the flashlight it should remember the size 
+
 
 ## License
 

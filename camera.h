@@ -23,5 +23,4 @@ typedef struct {
 } Camera;
 
 Vec2f world(const Camera* camera, Vec2f v);
-void update_camera(Camera *camera, float dt, const Mouse *mouse,
-                   XImage* image, Vec2f window_size);
+void update_camera(Camera *camera, float dt, const Mouse *mouse, Vec2f window_size);

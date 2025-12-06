@@ -6,8 +6,7 @@ Vec2f world(const Camera* camera, Vec2f v) {
     return vec2_div(v, camera->scale);
 }
 
-void update_camera(Camera *camera, float dt, const Mouse *mouse,
-                   XImage* image, Vec2f window_size) {
+void update_camera(Camera *camera, float dt, const Mouse *mouse, Vec2f window_size) {
     // Lerp scale towards target (for recenter or other animations)
     if (fabsf(camera->target_scale - camera->scale) > 0.001f) {
         camera->scale += (camera->target_scale - camera->scale) * config.scale_lerp_speed * dt;

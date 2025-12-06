@@ -107,7 +107,7 @@ static GLuint create_shader_program(const Shader* vertex, const Shader* fragment
     return program;
 }
 
-static void update_flashlight(Flashlight* fl, float dt, Vec2f window_size) {
+static void update_flashlight(Flashlight* fl, float dt) {
     // Handle manual radius adjustment (only when enabled and not in toggle animation)
     if (fl->is_enabled && !fl->animating && fabsf(fl->delta_radius) > 1.0f) {
         fl->target_radius = fmaxf(50.0f, fl->target_radius + fl->delta_radius * dt);
@@ -145,6 +145,10 @@ static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GL
     glUniform1f(glGetUniformLocation(shader, "flShadow"), flashlight->shadow);
     glUniform1f(glGetUniformLocation(shader, "flRadius"), flashlight->radius);
     glUniform1f(glGetUniformLocation(shader, "flEnabled"), flashlight->is_enabled ? 1.0f : 0.0f);
+    glUniform1f(glGetUniformLocation(shader, "blur_background"), config.blur_background ? 1.0f : 0.0f);
+    glUniform1f(glGetUniformLocation(shader, "background_blur_radius"), config.background_blur_radius);
+    glUniform1f(glGetUniformLocation(shader, "blur_outside_flashlight"), config.blur_outside_flashlight ? 1.0f : 0.0f);
+    glUniform1f(glGetUniformLocation(shader, "outside_flashlight_blur_radius"), config.outside_flashlight_blur_radius);
     
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
@@ -407,7 +411,7 @@ int main(int argc, char** argv) {
                 } else if (key == XK_f) {
                     flashlight.is_enabled = !flashlight.is_enabled;
                     flashlight.animating = true;
-                        
+        
                     if (flashlight.is_enabled) {
                         // Coming in: start from full screen, shrink to target
                         XWindowAttributes current_wa;
@@ -415,11 +419,25 @@ int main(int argc, char** argv) {
                         max_screen_dimension = fmaxf(current_wa.width, current_wa.height) * 1.5f;
                         flashlight.radius = max_screen_dimension;
                         flashlight.target_radius = 200.0f;
+        
+                        // Hide cursor
+                        if (config.hide_cursor_on_flashlight) {
+                            char data[] = {0};
+                            Pixmap blank = XCreateBitmapFromData(display, win, data, 1, 1);
+                            XColor dummy;
+                            Cursor cursor = XCreatePixmapCursor(display, blank, blank, &dummy, &dummy, 0, 0);
+                            XDefineCursor(display, win, cursor);
+                            XFreePixmap(display, blank);
+                        }
                     } else {
                         // Going out
                         flashlight.target_radius = flashlight.target_radius * config.flashlight_disable_radius_multiplier;
+        
+                        // Restore cursor if it was hidden
+                        if (config.hide_cursor_on_flashlight) {
+                            XUndefineCursor(display, win);
+                        }
                     }
-                    
                 } else if (key == XK_equal) {
                     if ((event.xkey.state & ControlMask) && flashlight.is_enabled) {
                         flashlight.delta_radius += INITIAL_FL_DELTA_RADIUS;
@@ -500,9 +518,8 @@ int main(int argc, char** argv) {
             }
         }
     
-        update_camera(&camera, dt, &mouse, screenshot.image,
-                      (Vec2f){(float)wa.width, (float)wa.height});
-        update_flashlight(&flashlight, dt, (Vec2f){(float)wa.width, (float)wa.height});
+        update_camera(&camera, dt, &mouse, (Vec2f){(float)wa.width, (float)wa.height});
+        update_flashlight(&flashlight, dt);
     
         draw_scene(&screenshot, &camera, shader_program, vao,
                    (Vec2f){(float)wa.width, (float)wa.height}, &mouse, &flashlight);
@@ -511,7 +528,7 @@ int main(int argc, char** argv) {
         glFinish();
     }
 
-    destroy_screenshot(&screenshot, display);
+    destroy_screenshot(&screenshot);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);

@@ -19,7 +19,7 @@ Screenshot create_screenshot(Display* display, Window window) {
     return screenshot;
 }
 
-void destroy_screenshot(Screenshot* screenshot, Display* display) {
+void destroy_screenshot(Screenshot* screenshot) {
     if (screenshot->image) {
         XDestroyImage(screenshot->image);
         screenshot->image = NULL;

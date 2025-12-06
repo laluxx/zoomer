@@ -8,5 +8,5 @@ typedef struct {
 } Screenshot;
 
 Screenshot create_screenshot(Display* display, Window window);
-void destroy_screenshot(Screenshot* screenshot, Display* display);
+void destroy_screenshot(Screenshot* screenshot);
 void refresh_screenshot(Screenshot* screenshot, Display* display, Window window);

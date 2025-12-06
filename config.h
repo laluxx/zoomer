@@ -14,6 +14,11 @@ typedef struct {
     float flashlight_disable_radius_multiplier;
     bool  lerp_camera_recenter;
     float camera_recenter_lerp_speed;
+    bool  blur_background;
+    float background_blur_radius;
+    bool  blur_outside_flashlight;
+    float outside_flashlight_blur_radius;
+    bool  hide_cursor_on_flashlight;
 } Config;
 
 extern Config config;
