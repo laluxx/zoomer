@@ -53,14 +53,6 @@ typedef struct {
 #define INITIAL_FL_DELTA_RADIUS 250.0f
 #define FL_DELTA_RADIUS_DECELERATION 10.0f
 
-// Physics constants for bubble movement
-#define BUBBLE_MASS 1.0f
-#define BUBBLE_SPRING_K 80.0f
-#define BUBBLE_DAMPING 8.0f
-#define BUBBLE_STRETCH_FACTOR 0.0001f  // How much velocity causes stretch
-#define BUBBLE_SQUEEZE_FACTOR 0.5f     // How much perpendicular squeeze
-#define BUBBLE_DEFORM_SMOOTHING 8.0f   // Smoothing for deformation recovery
-
 static char* read_file(const char* path) {
     FILE* f = fopen(path, "r");
     if (!f) return NULL;
@@ -181,21 +173,21 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f cursor_pos) {
             Vec2f vel_norm = vec2_mul(fl->velocity, 1.0f / vel_mag);
             
             // Stretch in direction of movement
-            float stretch_amount = vel_mag * BUBBLE_STRETCH_FACTOR;
+            float stretch_amount = vel_mag * config.bubble_stretch_factor;
             Vec2f target_stretch = vec2_mul(vel_norm, stretch_amount);
             
             // Smooth interpolation towards target stretch
-            fl->stretch.x += (target_stretch.x - fl->stretch.x) * BUBBLE_DEFORM_SMOOTHING * dt;
-            fl->stretch.y += (target_stretch.y - fl->stretch.y) * BUBBLE_DEFORM_SMOOTHING * dt;
+            fl->stretch.x += (target_stretch.x - fl->stretch.x) * config.bubble_deform_smoothing * dt;
+            fl->stretch.y += (target_stretch.y - fl->stretch.y) * config.bubble_deform_smoothing * dt;
             
             // Squeeze perpendicular to movement (volume conservation)
-            float target_squeeze = stretch_amount * BUBBLE_SQUEEZE_FACTOR;
-            fl->squeeze += (target_squeeze - fl->squeeze) * BUBBLE_DEFORM_SMOOTHING * dt;
+            float target_squeeze = stretch_amount * config.bubble_squeeze_factor;
+            fl->squeeze += (target_squeeze - fl->squeeze) * config.bubble_deform_smoothing * dt;
         } else {
             // Recover to circular shape when not moving
-            fl->stretch.x += (0.0f - fl->stretch.x) * BUBBLE_DEFORM_SMOOTHING * dt;
-            fl->stretch.y += (0.0f - fl->stretch.y) * BUBBLE_DEFORM_SMOOTHING * dt;
-            fl->squeeze += (0.0f - fl->squeeze) * BUBBLE_DEFORM_SMOOTHING * dt;
+            fl->stretch.x += (0.0f - fl->stretch.x) * config.bubble_deform_smoothing * dt;
+            fl->stretch.y += (0.0f - fl->stretch.y) * config.bubble_deform_smoothing * dt;
+            fl->squeeze += (0.0f - fl->squeeze) * config.bubble_deform_smoothing * dt;
         }
     } else {
         // When disabled, snap to cursor position
@@ -457,9 +449,9 @@ int main(int argc, char** argv) {
         .velocity = {0, 0},
         .acceleration = {0, 0},
         .target_pos = cursor_pos,
-        .mass = BUBBLE_MASS,
-        .spring_k = BUBBLE_SPRING_K,
-        .damping = BUBBLE_DAMPING,
+        .mass = config.bubble_mass,
+        .spring_k = config.bubble_spring_k,
+        .damping = config.bubble_damping,
         .stretch = {0, 0},
         .squeeze = 0.0f
     };

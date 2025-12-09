@@ -25,8 +25,15 @@ static Config default_config(void) {
         .blur_outside_flashlight = true,
         .outside_flashlight_blur_radius = 10.0f,
         .hide_cursor_on_flashlight = true,
-        .vertex_shader_path = "",
-        .fragment_shader_path = "",
+        .vertex_shader_path = "/etc/zoomer/vert.glsl",
+        .fragment_shader_path = "/etc/zoomer/frag.glsl",
+
+        .bubble_mass = 1.0f,
+        .bubble_spring_k = 80.0f,
+        .bubble_damping = 8.0f,
+        .bubble_stretch_factor = 0.0001f,
+        .bubble_squeeze_factor = 0.5f,
+        .bubble_deform_smoothing = 8.0f,
     };
 }
 
@@ -104,6 +111,20 @@ Config load_config(const char* filepath) {
                 strncpy(config.vertex_shader_path, v, sizeof(config.vertex_shader_path) - 1);
             } else if (strcmp(k, "fragment_shader_path") == 0) {
                 strncpy(config.fragment_shader_path, v, sizeof(config.fragment_shader_path) - 1);
+
+            } else if (strcmp(k, "bubble_mass") == 0) {
+                config.bubble_mass = atof(v);
+            } else if (strcmp(k, "bubble_spring_k") == 0) {
+                config.bubble_spring_k = atof(v);
+            } else if (strcmp(k, "bubble_damping") == 0) {
+                config.bubble_damping = atof(v);
+            } else if (strcmp(k, "bubble_stretch_factor") == 0) {
+                config.bubble_stretch_factor = atof(v);
+            } else if (strcmp(k, "bubble_squeeze_factor") == 0) {
+                config.bubble_squeeze_factor = atof(v);
+            } else if (strcmp(k, "bubble_deform_smoothing") == 0) {
+                config.bubble_deform_smoothing = atof(v);
+
             }
         }
     }
@@ -133,9 +154,7 @@ void generate_default_config(const char* filepath) {
     fprintf(f, "\n");
     fprintf(f, "# Boolean values can be: true/false, yes/no, on/off, 1/0\n");
     fprintf(f, "\n");
-    
     fprintf(f, "# Camera Settings\n");
- 
     fprintf(f, "min_scale                    = %f\n", config.min_scale);
     fprintf(f, "scroll_speed                 = %f\n", config.scroll_speed);
     fprintf(f, "drag_friction                = %f\n", config.drag_friction);
@@ -144,33 +163,33 @@ void generate_default_config(const char* filepath) {
     fprintf(f, "camera_pan_amount            = %f\n", config.camera_pan_amount);
     fprintf(f, "camera_position_lerp_speed   = %f\n", config.camera_position_lerp_speed);
     fprintf(f, "\n");
-    
     fprintf(f, "# Recenter Settings (0 key or middle mouse button)\n");
- 
     fprintf(f, "lerp_camera_recenter         = %s\n", config.lerp_camera_recenter ? "true" : "false");
     fprintf(f, "camera_recenter_lerp_speed   = %f\n", config.camera_recenter_lerp_speed);
     fprintf(f, "\n");
-    
     fprintf(f, "# Flashlight Settings (f key to toggle)\n");
- 
     fprintf(f, "flashlight_lerp_speed                 = %f\n", config.flashlight_lerp_speed);
     fprintf(f, "flashlight_disable_radius_multiplier  = %f\n", config.flashlight_disable_radius_multiplier);
     fprintf(f, "hide_cursor_on_flashlight             = %s\n", config.hide_cursor_on_flashlight ? "true" : "false");
     fprintf(f, "\n");
- 
     fprintf(f, "# Blur Settings\n");
- 
     fprintf(f, "blur_background                  = %s\n", config.blur_background ? "true" : "false");
     fprintf(f, "background_blur_radius           = %f\n", config.background_blur_radius);
     fprintf(f, "blur_outside_flashlight          = %s\n", config.blur_outside_flashlight ? "true" : "false");
     fprintf(f, "outside_flashlight_blur_radius   = %f\n", config.outside_flashlight_blur_radius);
     fprintf(f, "\n");
-    
     fprintf(f, "# Shader Paths (leave empty to use ./vert.glsl and ./frag.glsl)\n");
- 
     fprintf(f, "vertex_shader_path       = /etc/zoomer/vert.glsl\n");
     fprintf(f, "fragment_shader_path     = /etc/zoomer/frag.glsl\n");
     
+
+    fprintf(f, "bubble_mass =              %f\n", config.bubble_mass);
+    fprintf(f, "bubble_spring_k =          %f\n", config.bubble_spring_k);
+    fprintf(f, "bubble_damping =           %f\n", config.bubble_damping);
+    fprintf(f, "bubble_stretch_factor =    %f #How much velocity causes stretch\n", config.bubble_stretch_factor);
+    fprintf(f, "bubble_squeeze_factor =    %f #How much perpendicular squeeze\n", config.bubble_squeeze_factor);
+    fprintf(f, "bubble_deform_smoothing =  %f #Smoothing for deformation recovery\n", config.bubble_deform_smoothing);
+
 
     fclose(f);
 }
