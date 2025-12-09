@@ -27,7 +27,6 @@ static Config default_config(void) {
         .hide_cursor_on_flashlight = true,
         .vertex_shader_path = "/etc/zoomer/vert.glsl",
         .fragment_shader_path = "/etc/zoomer/frag.glsl",
-
         .bubble_mass = 1.0f,
         .bubble_spring_k = 80.0f,
         .bubble_damping = 8.0f,

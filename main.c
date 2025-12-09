@@ -21,7 +21,7 @@
 #include "camera.h"
 #include "la.h"
 
-#define MAX_SHADER_SIZE 8192
+#define MAX_SHADER_SIZE 16384
 
 typedef struct {
     char path[256];
@@ -49,6 +49,11 @@ typedef struct {
     Vec2f stretch;       // Stretch amount in x,y directions
     float squeeze;       // Perpendicular squeeze factor
 } Flashlight;
+
+typedef struct {
+    bool is_enabled;
+    unsigned char r, g, b;  // Current color under cursor
+} ColorPicker;
 
 #define INITIAL_FL_DELTA_RADIUS 250.0f
 #define FL_DELTA_RADIUS_DECELERATION 10.0f
@@ -212,8 +217,35 @@ static void update_flashlight(Flashlight* fl, float dt, Vec2f cursor_pos) {
     fl->shadow += (target_shadow - fl->shadow) * config.flashlight_lerp_speed * dt;
 }
 
+static void update_color_picker(ColorPicker* picker, Screenshot* screenshot, Camera* camera, Vec2f cursor_pos, Vec2f window_size) {
+    if (!picker->is_enabled) return;
+    
+    // Transform cursor position to screenshot coordinates
+    Vec2f half_window = vec2_mul(window_size, 0.5f);
+    Vec2f centered_cursor = vec2_sub(cursor_pos, half_window);
+    Vec2f world_pos = vec2_div(centered_cursor, camera->scale);
+    Vec2f screenshot_pos = vec2_add(world_pos, camera->position);
+    
+    int x = (int)screenshot_pos.x;
+    int y = (int)screenshot_pos.y;
+    
+    // Clamp to screenshot bounds
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x >= screenshot->image->width) x = screenshot->image->width - 1;
+    if (y >= screenshot->image->height) y = screenshot->image->height - 1;
+    
+    // Get pixel color from XImage
+    unsigned long pixel = XGetPixel(screenshot->image, x, y);
+    
+    // Extract RGB components (assuming 32-bit BGRA format)
+    picker->r = (pixel >> 16) & 0xFF;
+    picker->g = (pixel >> 8) & 0xFF;
+    picker->b = pixel & 0xFF;
+}
+
 static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GLuint vao,
-                      Vec2f window_size, Mouse* mouse, Flashlight* flashlight) {
+                      Vec2f window_size, Flashlight* flashlight) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -225,8 +257,8 @@ static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GL
                 (float)screenshot->image->width, (float)screenshot->image->height);
     glUniform2f(glGetUniformLocation(shader, "windowSize"), window_size.x, window_size.y);
     
-    // Pass flashlight bubble properties
     glUniform2f(glGetUniformLocation(shader, "cursorPos"), flashlight->position.x, flashlight->position.y);
+
     glUniform2f(glGetUniformLocation(shader, "bubbleStretch"), flashlight->stretch.x, flashlight->stretch.y);
     glUniform1f(glGetUniformLocation(shader, "bubbleSqueeze"), flashlight->squeeze);
     
@@ -259,6 +291,7 @@ static void print_usage(void) {
     printf("  -h, --help                show this help\n");
     printf("  -c, --config <filepath>   use config at <filepath>\n");
     printf("  -w, --windowed            windowed mode\n");
+    printf("  -p, --pick                start in color picker mode\n");
     printf("  --new-config [filepath]   generate default config\n");
 }
 
@@ -266,7 +299,9 @@ int main(int argc, char** argv) {
     bool windowed = false;
     float delay_sec = 0.0f;
     char config_file[512] = {0};
-    
+    bool start_in_picker_mode = false;
+
+
     const char* home = getenv("HOME");
     if (home) {
         snprintf(config_file, sizeof(config_file), "%s/.config/zoomer/config", home);
@@ -279,6 +314,8 @@ int main(int argc, char** argv) {
             }
         } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--windowed") == 0) {
             windowed = true;
+        } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--pick") == 0) {
+            start_in_picker_mode = true;
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage();
             return 0;
@@ -456,6 +493,20 @@ int main(int argc, char** argv) {
         .squeeze = 0.0f
     };
     
+    // Initialize color picker
+    ColorPicker color_picker = {
+        .is_enabled = start_in_picker_mode,
+        .r = 0, .g = 0, .b = 0
+    };
+    
+    Cursor crosshair_cursor = XCreateFontCursor(display, XC_crosshair);
+
+    // If starting in picker mode, set the cursor immediately
+    if (start_in_picker_mode) {
+        XDefineCursor(display, win, crosshair_cursor);
+    }
+
+    
     float dt = 1.0f / (float)rate;
     bool running = true;
     
@@ -488,6 +539,27 @@ int main(int argc, char** argv) {
                 KeySym key = XLookupKeysym(&event.xkey, 0);
                 if (key == XK_q || key == XK_Escape) {
                     running = false;
+                } else if (key == XK_c || key == XK_p) {
+                    // Toggle color picker mode
+                    color_picker.is_enabled = !color_picker.is_enabled;
+    
+                    if (color_picker.is_enabled) {
+                        // Disable flashlight when picking colors
+                        if (flashlight.is_enabled) {
+                            flashlight.is_enabled = false;
+                            flashlight.animating = true;
+                            flashlight.target_radius = flashlight.target_radius * config.flashlight_disable_radius_multiplier;
+                        }
+                        // Enable color picker mode (set cursor AFTER handling flashlight)
+                        if (config.hide_cursor_on_flashlight) {
+                            // Restore cursor visibility first
+                            XUndefineCursor(display, win);
+                        }
+                        XDefineCursor(display, win, crosshair_cursor);
+                    } else {
+                        // Disable color picker mode
+                        XUndefineCursor(display, win);
+                    }
                 } else if (key == XK_0) {
                     if (config.lerp_camera_recenter) {
                         camera.target_position = (Vec2f){0, 0};
@@ -502,7 +574,7 @@ int main(int argc, char** argv) {
                         camera.target_position = (Vec2f){0, 0};
                         camera.velocity = (Vec2f){0, 0};
                     }
-                } else if (key == XK_f) {
+                } else if (key == XK_f && !color_picker.is_enabled) {
                     flashlight.is_enabled = !flashlight.is_enabled;
                     flashlight.animating = true;
         
@@ -555,7 +627,11 @@ int main(int argc, char** argv) {
             }
             
             case ButtonPress:
-                if (event.xbutton.button == Button1) {
+                if (color_picker.is_enabled && event.xbutton.button == Button1) {
+                    // Print color and exit
+                    printf("#%02X%02X%02X\n", color_picker.r, color_picker.g, color_picker.b);
+                    running = false;
+                } else if (!color_picker.is_enabled && event.xbutton.button == Button1) {
                     mouse.prev = mouse.curr;
                     mouse.drag = true;
                     camera.velocity = (Vec2f){0, 0};
@@ -593,7 +669,7 @@ int main(int argc, char** argv) {
                 break;
             
             case ButtonRelease:
-                if (event.xbutton.button == Button1) {
+                if (event.xbutton.button == Button1 && !color_picker.is_enabled) {
                     mouse.drag = false;
                 }
                 break;
@@ -608,9 +684,13 @@ int main(int argc, char** argv) {
     
         update_camera(&camera, dt, &mouse, (Vec2f){(float)wa.width, (float)wa.height});
         update_flashlight(&flashlight, dt, mouse.curr);
+        
+        if (color_picker.is_enabled) {
+            update_color_picker(&color_picker, &screenshot, &camera, mouse.curr, (Vec2f){(float)wa.width, (float)wa.height});
+        }
     
         draw_scene(&screenshot, &camera, shader_program, vao,
-                   (Vec2f){(float)wa.width, (float)wa.height}, &mouse, &flashlight);
+                   (Vec2f){(float)wa.width, (float)wa.height}, &flashlight);
     
         glXSwapBuffers(display, win);
         glFinish();
@@ -627,4 +707,4 @@ int main(int argc, char** argv) {
     XCloseDisplay(display);
 
     return 0;
-}    
+}

@@ -21,7 +21,6 @@ typedef struct {
     bool  hide_cursor_on_flashlight;
     char vertex_shader_path[512];
     char fragment_shader_path[512];
-
     float bubble_mass;
     float bubble_spring_k;
     float bubble_damping;

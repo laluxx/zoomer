@@ -44,6 +44,7 @@ Usage: zoomer [OPTIONS]
   -h, --help                show this help
   -c, --config <filepath>   use config at <filepath>
   -w, --windowed            windowed mode
+  -p, --pick                start in color picker mode
   --new-config [filepath]   generate default config
 ```
 
@@ -61,6 +62,7 @@ Usage: zoomer [OPTIONS]
 | <kbd>j</kbd> or <kbd>↓</kbd> (Down arrow)                                       | Pan camera down.                                              |
 | <kbd>k</kbd> or <kbd>↑</kbd> (Up arrow)                                         | Pan camera up.                                                |
 | <kbd>l</kbd> or <kbd>→</kbd> (Right arrow)                                      | Pan camera right.                                             |
+| <kbd>c</kbd> or <kbd>p</kbd> f                                                  | Toggle color picking mode.                                    |
 
 ## Configuration
 
@@ -94,6 +96,12 @@ Supported parameters:
 | outside_flashlight_blur_radius       | The radius of the blur outside the flashlight                     |
 | vertex_shader_path                   | Path for the vertex shader                                        |
 | fragment_shader_path                 | Path for the fragment shader                                      |
+| bubble_mass                          | Controls the bubble inertia and resistance to movement            |
+| bubble_spring_k                      | How quickly the bubble snaps back to the cursor position          |
+| bubble_damping                       | How much the bubble oscillation is dampened/reduced               |
+| bubble_stretch_factor                | How much velocity causes stretch                                  |
+| bubble_squeeze_factor                | How much perpendicular squeeze                                    |
+| bubble_deform_smoothing              | Smoothing for deformation recovery                                |
 
 ## Experimental Features Compilation Flags
 
