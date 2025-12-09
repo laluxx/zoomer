@@ -21,7 +21,7 @@
 #include "camera.h"
 #include "la.h"
 
-#define MAX_SHADER_SIZE 4096
+#define MAX_SHADER_SIZE 8192
 
 typedef struct {
     char path[256];
@@ -35,10 +35,31 @@ typedef struct {
     float delta_radius;
     float target_radius;
     bool animating;
+    
+    // Physics properties for bubble
+    Vec2f position;      // Current position
+    Vec2f velocity;      // Current velocity
+    Vec2f target_pos;    // Target position (cursor)
+    Vec2f acceleration;  // Current acceleration (for deformation)
+    float mass;          // Mass of the bubble
+    float spring_k;      // Spring constant
+    float damping;       // Damping coefficient
+    
+    // Deformation properties
+    Vec2f stretch;       // Stretch amount in x,y directions
+    float squeeze;       // Perpendicular squeeze factor
 } Flashlight;
 
 #define INITIAL_FL_DELTA_RADIUS 250.0f
 #define FL_DELTA_RADIUS_DECELERATION 10.0f
+
+// Physics constants for bubble movement
+#define BUBBLE_MASS 1.0f
+#define BUBBLE_SPRING_K 80.0f
+#define BUBBLE_DAMPING 8.0f
+#define BUBBLE_STRETCH_FACTOR 0.0001f  // How much velocity causes stretch
+#define BUBBLE_SQUEEZE_FACTOR 0.5f     // How much perpendicular squeeze
+#define BUBBLE_DEFORM_SMOOTHING 8.0f   // Smoothing for deformation recovery
 
 static char* read_file(const char* path) {
     FILE* f = fopen(path, "r");
@@ -57,7 +78,6 @@ static char* read_file(const char* path) {
 }
 
 static bool load_shader(Shader* shader, const char* config_path, const char* fallback_path) {
-    // Try config path first if it's set
     if (config_path && config_path[0] != '\0') {
         char* content = read_file(config_path);
         if (content) {
@@ -70,7 +90,6 @@ static bool load_shader(Shader* shader, const char* config_path, const char* fal
         }
     }
     
-    // Fall back to relative path
     char* content = read_file(fallback_path);
     if (!content) {
         fprintf(stderr, "Error: Could not load shader from fallback path: %s\n", fallback_path);
@@ -124,11 +143,67 @@ static GLuint create_shader_program(const Shader* vertex, const Shader* fragment
     return program;
 }
 
-static void update_flashlight(Flashlight* fl, float dt) {
-    // Handle manual radius adjustment (only when enabled and not in toggle animation)
+static void update_flashlight(Flashlight* fl, float dt, Vec2f cursor_pos) {
+    fl->target_pos = cursor_pos;
+    
+    // Handle manual radius adjustment
     if (fl->is_enabled && !fl->animating && fabsf(fl->delta_radius) > 1.0f) {
         fl->target_radius = fmaxf(50.0f, fl->target_radius + fl->delta_radius * dt);
         fl->delta_radius -= fl->delta_radius * FL_DELTA_RADIUS_DECELERATION * dt;
+    }
+    
+    // Physics-based position update
+    if (fl->is_enabled) {
+        // Calculate spring force: F = -k * (x - target)
+        Vec2f displacement = vec2_sub(fl->position, fl->target_pos);
+        Vec2f spring_force = vec2_mul(displacement, -fl->spring_k);
+        
+        // Calculate damping force: F = -c * v
+        Vec2f damping_force = vec2_mul(fl->velocity, -fl->damping);
+        
+        // Total force
+        Vec2f total_force = vec2_add(spring_force, damping_force);
+        
+        // Acceleration: a = F / m
+        fl->acceleration = vec2_mul(total_force, 1.0f / fl->mass);
+        
+        // Update velocity: v = v + a * dt
+        fl->velocity = vec2_add(fl->velocity, vec2_mul(fl->acceleration, dt));
+        
+        // Update position: p = p + v * dt
+        fl->position = vec2_add(fl->position, vec2_mul(fl->velocity, dt));
+        
+        // Calculate deformation based on velocity and acceleration
+        float vel_mag = vec2_length(fl->velocity);
+        
+        if (vel_mag > 0.1f) {
+            // Normalize velocity to get direction
+            Vec2f vel_norm = vec2_mul(fl->velocity, 1.0f / vel_mag);
+            
+            // Stretch in direction of movement
+            float stretch_amount = vel_mag * BUBBLE_STRETCH_FACTOR;
+            Vec2f target_stretch = vec2_mul(vel_norm, stretch_amount);
+            
+            // Smooth interpolation towards target stretch
+            fl->stretch.x += (target_stretch.x - fl->stretch.x) * BUBBLE_DEFORM_SMOOTHING * dt;
+            fl->stretch.y += (target_stretch.y - fl->stretch.y) * BUBBLE_DEFORM_SMOOTHING * dt;
+            
+            // Squeeze perpendicular to movement (volume conservation)
+            float target_squeeze = stretch_amount * BUBBLE_SQUEEZE_FACTOR;
+            fl->squeeze += (target_squeeze - fl->squeeze) * BUBBLE_DEFORM_SMOOTHING * dt;
+        } else {
+            // Recover to circular shape when not moving
+            fl->stretch.x += (0.0f - fl->stretch.x) * BUBBLE_DEFORM_SMOOTHING * dt;
+            fl->stretch.y += (0.0f - fl->stretch.y) * BUBBLE_DEFORM_SMOOTHING * dt;
+            fl->squeeze += (0.0f - fl->squeeze) * BUBBLE_DEFORM_SMOOTHING * dt;
+        }
+    } else {
+        // When disabled, snap to cursor position
+        fl->position = cursor_pos;
+        fl->velocity = (Vec2f){0, 0};
+        fl->acceleration = (Vec2f){0, 0};
+        fl->stretch = (Vec2f){0, 0};
+        fl->squeeze = 0.0f;
     }
     
     // Lerp radius towards target
@@ -140,11 +215,10 @@ static void update_flashlight(Flashlight* fl, float dt) {
         fl->animating = false;
     }
     
-    // Update shadow with same lerp speed as radius
+    // Update shadow
     float target_shadow = fl->is_enabled ? 0.8f : 0.0f;
     fl->shadow += (target_shadow - fl->shadow) * config.flashlight_lerp_speed * dt;
 }
-
 
 static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GLuint vao,
                       Vec2f window_size, Mouse* mouse, Flashlight* flashlight) {
@@ -158,7 +232,12 @@ static void draw_scene(Screenshot* screenshot, Camera* camera, GLuint shader, GL
     glUniform2f(glGetUniformLocation(shader, "screenshotSize"),
                 (float)screenshot->image->width, (float)screenshot->image->height);
     glUniform2f(glGetUniformLocation(shader, "windowSize"), window_size.x, window_size.y);
-    glUniform2f(glGetUniformLocation(shader, "cursorPos"), mouse->curr.x, mouse->curr.y);
+    
+    // Pass flashlight bubble properties
+    glUniform2f(glGetUniformLocation(shader, "cursorPos"), flashlight->position.x, flashlight->position.y);
+    glUniform2f(glGetUniformLocation(shader, "bubbleStretch"), flashlight->stretch.x, flashlight->stretch.y);
+    glUniform1f(glGetUniformLocation(shader, "bubbleSqueeze"), flashlight->squeeze);
+    
     glUniform1f(glGetUniformLocation(shader, "flShadow"), flashlight->shadow);
     glUniform1f(glGetUniformLocation(shader, "flRadius"), flashlight->radius);
     glUniform1f(glGetUniformLocation(shader, "flEnabled"), flashlight->is_enabled ? 1.0f : 0.0f);
@@ -196,13 +275,11 @@ int main(int argc, char** argv) {
     float delay_sec = 0.0f;
     char config_file[512] = {0};
     
-    // Default config path
     const char* home = getenv("HOME");
     if (home) {
         snprintf(config_file, sizeof(config_file), "%s/.config/zoomer/config", home);
     }
     
-    // Parse arguments
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--delay") == 0) {
             if (i + 1 < argc) {
@@ -242,12 +319,10 @@ int main(int argc, char** argv) {
     
     Window tracking_window = DefaultRootWindow(display);
     
-    // Get screen refresh rate - try multiple methods
     XRRScreenConfiguration* screen_config = XRRGetScreenInfo(display, DefaultRootWindow(display));
     short rate = XRRConfigCurrentRate(screen_config);
     XRRFreeScreenConfigInfo(screen_config);
     
-    // Fallback to 60Hz if rate seems wrong
     if (rate < 30 || rate > 500) {
         rate = 60;
         printf("Screen rate detection failed, using default: 60 Hz\n");
@@ -297,7 +372,6 @@ int main(int argc, char** argv) {
     GLXContext glc = glXCreateContext(display, vi, NULL, GL_TRUE);
     glXMakeCurrent(display, win, glc);
     
-    // Initialize GLEW
     glewExperimental = GL_TRUE;
     GLenum glew_err = glewInit();
     if (glew_err != GLEW_OK) {
@@ -306,7 +380,6 @@ int main(int argc, char** argv) {
     }
     printf("OpenGL version: %s\n", glGetString(GL_VERSION));
     
-    // Load shaders with config paths and fallbacks
     Shader vertex_shader, fragment_shader;
     if (!load_shader(&vertex_shader, config.vertex_shader_path, "/etc/zoomer/vert.glsl") || 
         !load_shader(&fragment_shader, config.fragment_shader_path, "/etc/zoomer/frag.glsl")) {
@@ -371,15 +444,24 @@ int main(int argc, char** argv) {
     Vec2f cursor_pos = get_cursor_position(display);
     Mouse mouse = {.curr = cursor_pos, .prev = cursor_pos};
     
-    // Get initial window size for flashlight
     XWindowAttributes initial_wa;
     XGetWindowAttributes(display, win, &initial_wa);
     float max_screen_dimension = fmaxf(initial_wa.width, initial_wa.height);
     
+    // Initialize flashlight with physics and deformation properties
     Flashlight flashlight = {
         .radius = 200.0f,
         .target_radius = 200.0f,
-        .animating = false
+        .animating = false,
+        .position = cursor_pos,
+        .velocity = {0, 0},
+        .acceleration = {0, 0},
+        .target_pos = cursor_pos,
+        .mass = BUBBLE_MASS,
+        .spring_k = BUBBLE_SPRING_K,
+        .damping = BUBBLE_DAMPING,
+        .stretch = {0, 0},
+        .squeeze = 0.0f
     };
     
     float dt = 1.0f / (float)rate;
@@ -433,14 +515,12 @@ int main(int argc, char** argv) {
                     flashlight.animating = true;
         
                     if (flashlight.is_enabled) {
-                        // Coming in: start from full screen, shrink to target
                         XWindowAttributes current_wa;
                         XGetWindowAttributes(display, win, &current_wa);
                         max_screen_dimension = fmaxf(current_wa.width, current_wa.height) * 1.5f;
                         flashlight.radius = max_screen_dimension;
                         flashlight.target_radius = 200.0f;
         
-                        // Hide cursor
                         if (config.hide_cursor_on_flashlight) {
                             char data[] = {0};
                             Pixmap blank = XCreateBitmapFromData(display, win, data, 1, 1);
@@ -450,10 +530,8 @@ int main(int argc, char** argv) {
                             XFreePixmap(display, blank);
                         }
                     } else {
-                        // Going out
                         flashlight.target_radius = flashlight.target_radius * config.flashlight_disable_radius_multiplier;
         
-                        // Restore cursor if it was hidden
                         if (config.hide_cursor_on_flashlight) {
                             XUndefineCursor(display, win);
                         }
@@ -504,19 +582,17 @@ int main(int argc, char** argv) {
                         camera.velocity = (Vec2f){0, 0};
                     }
                 } else if (event.xbutton.button == Button4) {
-                    // Scroll up
                     if ((event.xbutton.state & ControlMask) && flashlight.is_enabled) {
                         flashlight.delta_radius += INITIAL_FL_DELTA_RADIUS;
-                        flashlight.animating = false; // Stop animation when manually adjusting
+                        flashlight.animating = false;
                     } else {
                         camera.delta_scale += config.scroll_speed;
                         camera.scale_pivot = mouse.curr;
                     }
                 } else if (event.xbutton.button == Button5) {
-                    // Scroll down
                     if ((event.xbutton.state & ControlMask) && flashlight.is_enabled) {
                         flashlight.delta_radius -= INITIAL_FL_DELTA_RADIUS;
-                        flashlight.animating = false; // Stop animation when manually adjusting
+                        flashlight.animating = false;
                     } else {
                         camera.delta_scale -= config.scroll_speed;
                         camera.scale_pivot = mouse.curr;
@@ -539,7 +615,7 @@ int main(int argc, char** argv) {
         }
     
         update_camera(&camera, dt, &mouse, (Vec2f){(float)wa.width, (float)wa.height});
-        update_flashlight(&flashlight, dt);
+        update_flashlight(&flashlight, dt, mouse.curr);
     
         draw_scene(&screenshot, &camera, shader_program, vao,
                    (Vec2f){(float)wa.width, (float)wa.height}, &mouse, &flashlight);
@@ -559,4 +635,4 @@ int main(int argc, char** argv) {
     XCloseDisplay(display);
 
     return 0;
-}
+}    

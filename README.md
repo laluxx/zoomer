@@ -91,7 +91,9 @@ Supported parameters:
 | lerp_camera_recenter                 | Enable/disable smooth camera recenter animation (true/false)      |
 | camera_rfecenter_lerp_speed          | Speed of camera recenter animation (if lerp_camera_recenter=true) |
 | blur_outside_flashlight              | Whether to blur outside the flashlight when active                |
-| outside_flashlight_blur_radius       | The radius of the blur outside the flashlight                                                              |
+| outside_flashlight_blur_radius       | The radius of the blur outside the flashlight                     |
+| vertex_shader_path                   | Path for the vertex shader                                        |
+| fragment_shader_path                 | Path for the fragment shader                                      |
 
 ## Experimental Features Compilation Flags
 
